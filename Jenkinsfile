@@ -28,4 +28,9 @@ pipeline {
                 docker build -t train-api-pipeline .
                 docker stop train-api || true
                 docker rm train-api || true
-                docker run -d -p 800
+                docker run -d -p 8000:8000 --name train-api train-api-pipeline
+                '''
+            }
+        }
+    }
+}
