@@ -1,7 +1,13 @@
 pipeline {
-    agent any
+    agent {  // ← CHANGE THIS LINE ONLY
+        docker {
+            image 'docker:26.1-dind'
+            args '-v /var/run/docker.sock:/var/run/docker.sock --privileged'
+        }
+    }
     
     stages {
+        // Keep ALL your stages EXACTLY the same ↓
         stage('Hello') {
             steps {
                 echo '🚂 Train API CI/CD - WORKING!'
@@ -14,7 +20,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image first
                     sh '''
                     docker build -t train-api-pipeline .
                     echo "✅ Docker image built successfully"
@@ -26,12 +31,11 @@ pipeline {
         stage('Test Container') {
             steps {
                 script {
-                    // Test inside Docker container (no need for host Python)
                     sh '''
-                    docker run --rm train-api-pipeline \
+                    docker run --rm train-api-pipeline \\
                         python3 -m uvicorn main:app --host 0.0.0.0 --port 9001 &
                     sleep 5
-                    docker run --rm --network container:$(docker ps -lq) curlimages/curl \
+                    docker run --rm --network container:$(docker ps -lq) curlimages/curl \\
                         http://localhost:9001/health || echo "Local test OK"
                     docker stop $(docker ps -lq) 2>/dev/null || true
                     '''
