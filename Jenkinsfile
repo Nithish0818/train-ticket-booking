@@ -1,57 +1,80 @@
 pipeline {
-    agent any
-    
+
+    agent {
+        docker {
+            image 'python:3.10-slim'
+            args '-u root:root'
+        }
+    }
+
+    environment {
+        PYTHONUNBUFFERED = '1'
+    }
+
     stages {
-        stage('🚂 Train API CI/CD') {
+
+        stage('📦 Install Dependencies') {
             steps {
-                echo 'Installing dependencies...'
+                echo 'Installing Python dependencies...'
                 sh '''
-                cd app
-                python3 -m pip install --user -r ../requirements.txt --quiet
-                export PATH="$HOME/.local/bin:$PATH"
-                which uvicorn || echo "Uvicorn installed"
+                python --version
+                pip --version
+
+                pip install --upgrade pip
+                pip install -r requirements.txt
                 '''
             }
         }
-        
-        stage('🧪 Test API') {
+
+        stage('🚀 Start Train API') {
             steps {
+                echo 'Starting FastAPI application...'
                 sh '''
                 cd app
-                export PATH="$HOME/.local/bin:$PATH"
-                
-                # Start API in background
-                nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
-                API_PID=$!
-                echo "API PID: $API_PID"
-                
-                # Wait for startup
+
+                nohup uvicorn main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
+                echo $! > uvicorn.pid
+
                 sleep 8
-                
-                # Health check
+                '''
+            }
+        }
+
+        stage('🧪 Health Check') {
+            steps {
+                echo 'Checking API health endpoint...'
+                sh '''
                 curl -f http://localhost:8000/health || curl -f http://127.0.0.1:8000/health
                 echo "✅ Health check PASSED!"
-                
-                # Cleanup
-                kill $API_PID || true
-                sleep 2
                 '''
             }
         }
-        
+
+        stage('📁 Debug Logs') {
+            steps {
+                sh '''
+                echo "==== API LOG ===="
+                cat app/api.log || true
+                '''
+            }
+        }
+
         stage('✅ SUCCESS') {
             steps {
                 echo '🎉 Train Ticket API CI/CD PIPELINE COMPLETED SUCCESSFULLY!'
-                sh 'ls -la app/'
-                echo '🚀 Run manually: cd app && uvicorn main:app --host 0.0.0.0 --port 8000'
             }
         }
     }
-    
+
     post {
         always {
-            sh 'pkill -f uvicorn || true'
-            sh 'pkill -f main.py || true'
+            echo 'Cleaning up background processes...'
+            sh '''
+            if [ -f app/uvicorn.pid ]; then
+                kill $(cat app/uvicorn.pid) || true
+            fi
+            pkill -f uvicorn || true
+            '''
             echo 'Cleanup completed'
         }
     }
