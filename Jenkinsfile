@@ -22,60 +22,39 @@ pipeline {
 
                 python --version
                 pip --version
+
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 '''
             }
         }
 
-        stage('🚀 Start Train API') {
+        stage('🚀 Run & Test API') {
             steps {
-                echo 'Starting FastAPI application...'
+                echo 'Starting FastAPI and running health check...'
                 sh '''
                 cd app
-                nohup uvicorn main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
-                echo $! > uvicorn.pid
-                sleep 8
-                '''
-            }
-        }
 
-        stage('🧪 Health Check') {
-            steps {
-                echo 'Checking API health endpoint...'
-                sh '''
-                curl -f http://localhost:8000/health || curl -f http://127.0.0.1:8000/health
-                echo "✅ Health check PASSED!"
-                '''
-            }
-        }
+                echo "Starting FastAPI..."
+                uvicorn main:app --host 0.0.0.0 --port 8000 &
+                API_PID=$!
 
-        stage('📁 Debug Logs') {
-            steps {
-                sh '''
-                echo "==== API LOG ===="
-                cat app/api.log || true
+                echo "Waiting for API to start..."
+                sleep 10
+
+                echo "Running Health Check..."
+                curl -f http://localhost:8000/health
+
+                echo "Stopping FastAPI..."
+                kill $API_PID
                 '''
             }
         }
 
         stage('✅ SUCCESS') {
             steps {
-                echo '🎉 Train Ticket API CI/CD PIPELINE COMPLETED SUCCESSFULLY!'
+                echo 'Train Ticket FastAPI CI Pipeline Completed Successfully!'
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning up background processes...'
-            sh '''
-            if [ -f app/uvicorn.pid ]; then
-                kill $(cat app/uvicorn.pid) || true
-            fi
-            pkill -f uvicorn || true
-            '''
-            echo 'Cleanup completed'
         }
     }
 }
