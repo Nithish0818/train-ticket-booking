@@ -11,29 +11,30 @@ pipeline {
         PYTHONUNBUFFERED = '1'
     }
 
-    stage('📦 Install Dependencies') {
-    steps {
-        echo 'Installing system + Python dependencies...'
-        sh '''
-        apt-get update
-        apt-get install -y curl procps
+    stages {
 
-        python --version
-        pip --version
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        '''
-    }
-}
+        stage('📦 Install Dependencies') {
+            steps {
+                echo 'Installing system + Python dependencies...'
+                sh '''
+                apt-get update
+                apt-get install -y curl procps
+
+                python --version
+                pip --version
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                '''
+            }
+        }
+
         stage('🚀 Start Train API') {
             steps {
                 echo 'Starting FastAPI application...'
                 sh '''
                 cd app
-
                 nohup uvicorn main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
                 echo $! > uvicorn.pid
-
                 sleep 8
                 '''
             }
