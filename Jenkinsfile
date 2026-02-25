@@ -11,21 +11,20 @@ pipeline {
         PYTHONUNBUFFERED = '1'
     }
 
-    stages {
+    stage('📦 Install Dependencies') {
+    steps {
+        echo 'Installing system + Python dependencies...'
+        sh '''
+        apt-get update
+        apt-get install -y curl procps
 
-        stage('📦 Install Dependencies') {
-            steps {
-                echo 'Installing Python dependencies...'
-                sh '''
-                python --version
-                pip --version
-
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                '''
-            }
-        }
-
+        python --version
+        pip --version
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        '''
+    }
+}
         stage('🚀 Start Train API') {
             steps {
                 echo 'Starting FastAPI application...'
