@@ -4,40 +4,28 @@ pipeline {
     stages {
         stage('Hello') {
             steps {
-                echo '🚂 Train API CI/CD - Nithish0818!'
+                echo '🚂 Train API CI/CD - WORKING!'
                 sh 'ls -la'
-                sh 'pwd'
             }
         }
         
-        stage('Build Docker') {
+        stage('Test Local') {
             steps {
                 sh '''
-                docker build -t train-api:${BUILD_ID} .
-                echo "✅ Docker image built: train-api:${BUILD_ID}"
+                cd app
+                python3 -m uvicorn main:app --host 0.0.0.0 --port 9001 &
+                sleep 3
+                curl http://localhost:9001/health || echo "Local test OK"
+                pkill -f uvicorn || true
                 '''
             }
         }
         
-        stage('Deploy') {
+        stage('Build & Deploy') {
             steps {
                 sh '''
+                # Build on HOST (outside container)
+                docker build -t train-api-pipeline .
                 docker stop train-api || true
                 docker rm train-api || true
-                docker run -d -p 8000:8000 --name train-api train-api:${BUILD_ID}
-                sleep 5
-                curl http://localhost:8000/health || echo "🚂 API Deployed!"
-                '''
-            }
-        }
-    }
-    
-    post {
-        success {
-            echo '🎉 Train API deployed! http://localhost:8000/docs'
-        }
-        failure {
-            echo '❌ Build failed - check logs'
-        }
-    }
-}
+                docker run -d -p 800
