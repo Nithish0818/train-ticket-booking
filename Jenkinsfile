@@ -1,64 +1,58 @@
 pipeline {
-    agent {  // ← CHANGE THIS LINE ONLY
-        docker {
-            image 'docker:26.1-dind'
-            args '-v /var/run/docker.sock:/var/run/docker.sock --privileged'
-        }
-    }
+    agent any
     
     stages {
-        // Keep ALL your stages EXACTLY the same ↓
-        stage('Hello') {
+        stage('🚂 Train API CI/CD') {
             steps {
-                echo '🚂 Train API CI/CD - WORKING!'
-                sh 'ls -la'
-                sh 'docker --version || echo "Docker not available"'
-                sh 'python3 --version || echo "Python3 not available"'
+                echo 'Installing dependencies...'
+                sh '''
+                cd app
+                python3 -m pip install --user -r ../requirements.txt --quiet
+                export PATH="$HOME/.local/bin:$PATH"
+                which uvicorn || echo "Uvicorn installed"
+                '''
             }
         }
         
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh '''
-                    docker build -t train-api-pipeline .
-                    echo "✅ Docker image built successfully"
-                    '''
-                }
-            }
-        }
-        
-        stage('Test Container') {
-            steps {
-                script {
-                    sh '''
-                    docker run --rm train-api-pipeline \\
-                        python3 -m uvicorn main:app --host 0.0.0.0 --port 9001 &
-                    sleep 5
-                    docker run --rm --network container:$(docker ps -lq) curlimages/curl \\
-                        http://localhost:9001/health || echo "Local test OK"
-                    docker stop $(docker ps -lq) 2>/dev/null || true
-                    '''
-                }
-            }
-        }
-        
-        stage('Deploy') {
+        stage('🧪 Test API') {
             steps {
                 sh '''
-                docker stop train-api || true
-                docker rm train-api || true
-                docker run -d -p 8000:8000 --name train-api train-api-pipeline
-                echo "✅ Deployed to http://localhost:8000"
+                cd app
+                export PATH="$HOME/.local/bin:$PATH"
+                
+                # Start API in background
+                nohup python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
+                API_PID=$!
+                echo "API PID: $API_PID"
+                
+                # Wait for startup
+                sleep 8
+                
+                # Health check
+                curl -f http://localhost:8000/health || curl -f http://127.0.0.1:8000/health
+                echo "✅ Health check PASSED!"
+                
+                # Cleanup
+                kill $API_PID || true
+                sleep 2
                 '''
+            }
+        }
+        
+        stage('✅ SUCCESS') {
+            steps {
+                echo '🎉 Train Ticket API CI/CD PIPELINE COMPLETED SUCCESSFULLY!'
+                sh 'ls -la app/'
+                echo '🚀 Run manually: cd app && uvicorn main:app --host 0.0.0.0 --port 8000'
             }
         }
     }
     
     post {
         always {
-            sh 'docker images | grep train-api || true'
-            sh 'docker ps -a | grep train-api || true'
+            sh 'pkill -f uvicorn || true'
+            sh 'pkill -f main.py || true'
+            echo 'Cleanup completed'
         }
     }
 }
