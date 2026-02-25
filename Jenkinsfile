@@ -30,26 +30,23 @@ pipeline {
         }
 
         stage('🚀 Run & Test API') {
-            steps {
-                echo 'Starting FastAPI and running health check...'
-                sh '''
-                cd app
+    steps {
+        sh '''
+        echo "Starting FastAPI..."
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        API_PID=$!
 
-                echo "Starting FastAPI..."
-                uvicorn main:app --host 0.0.0.0 --port 8000 &
-                API_PID=$!
+        echo "Waiting for API to start..."
+        sleep 10
 
-                echo "Waiting for API to start..."
-                sleep 10
+        echo "Running Health Check..."
+        curl -f http://localhost:8000/health
 
-                echo "Running Health Check..."
-                curl -f http://localhost:8000/health
-
-                echo "Stopping FastAPI..."
-                kill $API_PID
-                '''
-            }
-        }
+        echo "Stopping FastAPI..."
+        kill $API_PID
+        '''
+    }
+}
 
         stage('✅ SUCCESS') {
             steps {
