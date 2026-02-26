@@ -1,0 +1,16 @@
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+RUN apt-get update && apt-get install -y docker.io
+
+# Delete existing docker group (if exists)
+RUN groupdel docker || true
+
+# Create docker group with SAME GID as host (147)
+RUN groupadd -g 147 docker
+
+# Add jenkins user to docker group
+RUN usermod -aG docker jenkins
+
+USER jenkins
