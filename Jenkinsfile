@@ -18,10 +18,20 @@ pipeline {
             steps {
                 sh '''
                 apt-get update
-                apt-get install -y curl procps
+                
+                apt-get install -y \
+                curl \
+                procps \
+                build-essential \
+                libffi-dev \
+                libssl-dev \
+                python3-dev \
+                cargo
+                
                 pip install --upgrade pip
+                pip install wheel setuptools
+                
                 pip install -r requirements.txt
-                pytest
                 '''
             }
         }
