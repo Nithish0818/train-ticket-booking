@@ -19,20 +19,37 @@ pipeline {
                 sh '''
                 apt-get update
                 
-                apt-get install -y \
-                curl \
-                procps \
-                build-essential \
-                libffi-dev \
-                libssl-dev \
-                python3-dev \
+                apt-get install -y \\
+                curl \\
+                procps \\
+                build-essential \\
+                libffi-dev \\
+                libssl-dev \\
+                python3-dev \\
                 cargo
                 
                 pip install --upgrade pip
                 pip install wheel setuptools
                 
                 pip install -r requirements.txt
+                pip install pytest  # 🔥 ADD THIS
+                
+                # 🔥 RUN TESTS + JUNIT XML
+                pytest test/ \\
+                    --junitxml=test-results.xml \\
+                    --verbose \\
+                    -s
+                
+                # 🔥 PUBLISH RESULTS (Jenkins sees this)
+                ls -la test-results.xml || echo "No XML found"
                 '''
+            }
+            
+            // 🔥 AUTO PUBLISH TEST RESULTS
+            post {
+                always {
+                    junit testResultsSpec: 'test-results.xml', allowEmptyResults: true
+                }
             }
         }
 
@@ -62,10 +79,10 @@ pipeline {
             sh 'docker system prune -f'
         }
         success {
-            echo "Docker Image pushed successfully: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+            echo "🚀 Docker Image pushed: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
         }
         failure {
-            echo "Pipeline Failed!"
+            echo "❌ Pipeline Failed!"
         }
     }
 }
