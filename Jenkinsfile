@@ -32,23 +32,23 @@ pipeline {
                 pip install wheel setuptools
                 
                 pip install -r requirements.txt
-                pip install pytest  # 🔥 ADD THIS
+                pip install pytest  # 🔥 TEST DEPENDENCY
                 
-                # 🔥 RUN TESTS + JUNIT XML
+                # 🔥 RUN TESTS WITH JUNIT XML
                 pytest test/ \\
                     --junitxml=test-results.xml \\
                     --verbose \\
                     -s
                 
-                # 🔥 PUBLISH RESULTS (Jenkins sees this)
-                ls -la test-results.xml || echo "No XML found"
+                # 🔥 VERIFY XML CREATED
+                ls -la test-results.xml
                 '''
             }
             
-            // 🔥 AUTO PUBLISH TEST RESULTS
+            // 🔥 FIXED SYNTAX - testResults NOT testResultsSpec
             post {
                 always {
-                    junit testResultsSpec: 'test-results.xml', allowEmptyResults: true
+                    junit testResults: 'test-results.xml', allowEmptyResults: true
                 }
             }
         }
