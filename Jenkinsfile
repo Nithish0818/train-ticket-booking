@@ -32,20 +32,17 @@ pipeline {
                 pip install wheel setuptools
                 
                 pip install -r requirements.txt
-                pip install pytest  # 🔥 TEST DEPENDENCY
+                pip install pytest
                 
-                # 🔥 RUN TESTS WITH JUNIT XML
                 pytest test/ \\
                     --junitxml=test-results.xml \\
                     --verbose \\
                     -s
                 
-                # 🔥 VERIFY XML CREATED
                 ls -la test-results.xml
                 '''
             }
             
-            // 🔥 FIXED SYNTAX - testResults NOT testResultsSpec
             post {
                 always {
                     junit testResults: 'test-results.xml', allowEmptyResults: true
@@ -72,28 +69,28 @@ pipeline {
                 }
             }
         }
-    }
 
-    stage('🚀 Deploy to Render') {
-    steps {
-        withCredentials([string(credentialsId: 'render-api-key', variable: 'RENDER_API_KEY')]) {
-            sh '''
-            curl -X POST \\
-                -H "Authorization: Bearer ${RENDER_API_KEY}" \\
-                -H "Content-Type: application/json" \\
-                https://api.render.com/v1/services/YOUR-SERVICE-ID/deploys
-            '''
+        // 🔥 FIXED: Deploy stage INSIDE stages block
+        stage('🚀 Deploy to Render') {
+            steps {
+                withCredentials([string(credentialsId: 'render-api-key', variable: 'RENDER_API_KEY')]) {
+                    sh '''
+                    curl -X POST \\
+                        -H "Authorization: Bearer ${RENDER_API_KEY}" \\
+                        -H "Content-Type: application/json" \\
+                        https://api.render.com/v1/services/YOUR-SERVICE-ID/deploys
+                    '''
+                }
+            }
         }
-    }
-}
-
+    }  // 🔥 stages block closes AFTER deploy stage
 
     post {
         always {
             sh 'docker system prune -f'
         }
         success {
-            echo "🚀 Docker Image pushed: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+            echo "🚀 Full CI/CD Complete: ${DOCKER_IMAGE}:${BUILD_NUMBER}"
         }
         failure {
             echo "❌ Pipeline Failed!"
