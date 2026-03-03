@@ -44,7 +44,7 @@ async def health_check():
 
 @app.get("/nithish-cd-test")
 async def cd_test():
-    return {"cd": "Working", "deployed": "03/03/2026"}
+    return {"cd": "Working", "deployed": "03/Mar/2026"}
 
 
 if __name__ == "__main__":
