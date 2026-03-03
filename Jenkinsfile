@@ -78,7 +78,7 @@ pipeline {
             curl -X POST \
                 -H "Authorization: Bearer $RENDER_API_KEY" \
                 -H "Content-Type: application/json" \
-                https://api.render.com/v1/services/srv-xxxxxxxxxx/deploys
+                https://api.render.com/v1/services/srv-d6iok4vkijhs7389ou6g/deploys
             '''
         }
             }
