@@ -74,13 +74,13 @@ pipeline {
         stage('🚀 Deploy to Render') {
             steps {
                 withCredentials([string(credentialsId: 'render-api-key', variable: 'RENDER_API_KEY')]) {
-                    sh '''
-                    curl -X POST \\
-                        -H "Authorization: Bearer ${RENDER_API_KEY}" \\
-                        -H "Content-Type: application/json" \\
-                        https://api.render.com/v1/services/YOUR-SERVICE-ID/deploys
-                    '''
-                }
+            sh '''
+            curl -X POST \
+                -H "Authorization: Bearer $RENDER_API_KEY" \
+                -H "Content-Type: application/json" \
+                https://api.render.com/v1/services/srv-xxxxxxxxxx/deploys
+            '''
+        }
             }
         }
     }  // 🔥 stages block closes AFTER deploy stage
