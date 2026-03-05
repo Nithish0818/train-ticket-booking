@@ -47,6 +47,9 @@ async def cd_test():
     return {"cd": "Working", "deployed": "03/Mar/2026"}
 
 
+
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # ✅ Render default
     uvicorn.run(app, host="0.0.0.0", port=port)
